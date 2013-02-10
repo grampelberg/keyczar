@@ -31,6 +31,9 @@ public class AllTests extends TestSuite {
 
   public static Test suite() {
     TestSuite suite = new TestSuite();
+    suite.addTestSuite(InteropJavaTest.class);
+    suite.addTestSuite(InteropCSharpTest.class);
+    suite.addTestSuite(InteropPythonTest.class);
     suite.addTestSuite(CrypterTest.class);
     suite.addTestSuite(SignerTest.class);
     suite.addTestSuite(TimeoutSignerTest.class);
