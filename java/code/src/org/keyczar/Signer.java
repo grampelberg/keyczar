@@ -233,7 +233,7 @@ public class Signer extends Verifier {
     stream.updateSign(ByteBuffer.wrap(FORMAT_BYTES));
     
     // now get signature output
-    ByteBuffer output = ByteBuffer.allocate(digestSize());
+    ByteBuffer output = ByteBuffer.allocate(stream.digestSize());
     output.mark();
     
     stream.sign(output);
