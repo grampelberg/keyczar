@@ -29,6 +29,7 @@ import org.keyczar.exceptions.KeyczarException;
 import org.keyczar.exceptions.ShortCiphertextException;
 import org.keyczar.interfaces.KeyczarReader;
 import org.keyczar.util.Base64Coder;
+import org.keyczar.util.Clock;
 
 /**
  * Tests for every wire format across platforms 
@@ -301,5 +302,68 @@ public abstract class InteropTest extends TestCase {
 	  @Test 
 	  public final void testRsaDsaSignedSessionDecrypt() throws Exception {
 		  testSignedSessionDecrypt("/rsa", "/dsa.public");
+	  }
+	  
+	  public class EarlyClock implements Clock{
+		  public long now(){
+			  return 1356087960000L;
+		  }
+	  }
+	  
+	  public class LateClock implements Clock{
+		  public long now(){
+			  return 1356088560000L;
+		  }
+	  }
+	  
+	  private final void testTimeoutVerifier(String subDir) throws Exception {
+			TimeoutVerifier verifier = new TimeoutVerifier(testData(subDir));
+			verifier.setClock(new EarlyClock());
+		    RandomAccessFile activeInput =
+		      new RandomAccessFile(testData(subDir) + "/2.timeout", "r");
+		    String activeSignature = activeInput.readLine(); 
+		    activeInput.close();
+		    assertTrue(verifier.verify(input, activeSignature));
+	  }
+	  
+      private final void testTimeoutVerifierExpired(String subDir) throws Exception {
+    		TimeoutVerifier verifier = new TimeoutVerifier(testData(subDir));
+			verifier.setClock(new LateClock());
+		    RandomAccessFile activeInput =
+		      new RandomAccessFile(testData(subDir) + "/2.timeout", "r");
+		    String activeSignature = activeInput.readLine(); 
+		    activeInput.close();
+		    assertFalse(verifier.verify(input, activeSignature));
+	  }
+      
+	  @Test 
+	  public final void testHmacTimeoutVerifier() throws Exception {
+		  testTimeoutVerifier("/hmac");
+	  }
+	  
+	  @Test 
+	  public final void testHmacTimeoutVerifierExpired() throws Exception {
+		  testTimeoutVerifierExpired("/hmac");
+	  }
+	  
+	  
+	  @Test 
+	  public final void testDsaTimeoutVerifier() throws Exception {
+		  testTimeoutVerifier("/dsa");
+	  }
+	  
+	  @Test 
+	  public final void testDsaTimeoutVerifierExpired() throws Exception {
+		  testTimeoutVerifierExpired("/dsa");
+	  }
+	  
+	  @Test 
+	  public final void testRsaTimeoutVerifier() throws Exception {
+		  testTimeoutVerifier("/rsa-sign");
+	  }
+	  
+	  @Test 
+	  public final void testRsaTimeoutVerifierExpired() throws Exception {
+		  testTimeoutVerifierExpired("/rsa-sign");
 	  }
 }
