@@ -146,7 +146,7 @@ public abstract class InteropTest extends TestCase {
 
 	    assertTrue(verifier.verify(input, activeSignature));
 	    assertTrue(verifier.verify(input, primarySignature));
-	  }
+	}
 	
 	private final void testVerifyUnversioned(String subDir) throws Exception {
 		UnversionedVerifier verifier = new UnversionedVerifier(testData(subDir));

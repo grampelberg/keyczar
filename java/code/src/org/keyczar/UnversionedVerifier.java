@@ -47,8 +47,6 @@ import java.util.Map.Entry;
 public class UnversionedVerifier extends Keyczar {
   private static final Logger LOG =
     Logger.getLogger(UnversionedVerifier.class);
-  private static final StreamCache<VerifyingStream> VERIFY_CACHE
-    = new StreamCache<VerifyingStream>();
 
   /**
    * Initialize a new UnversionedVerifier with a KeyczarReader.
@@ -112,18 +110,20 @@ public class UnversionedVerifier extends Keyczar {
     for (Iterator<Entry<KeyVersion, KeyczarKey>> iter =
       versionMap.entrySet().iterator(); iter.hasNext(); ) {
       KeyczarKey key = iter.next().getValue();
-      ByteBuffer dataCopy = data.duplicate();
-      ByteBuffer signatureCopy = signature.duplicate();
-      VerifyingStream stream = VERIFY_CACHE.get(key);
-      if (stream == null) {
-        stream = (VerifyingStream) key.getStream();
-      }
-      stream.initVerify();
-      stream.updateVerify(dataCopy);
-      boolean result = stream.verify(signatureCopy);
-      VERIFY_CACHE.put(key, stream);
-      if (result) {
-        return true;
+      try{
+	      ByteBuffer dataCopy = data.duplicate();
+	      ByteBuffer signatureCopy = signature.duplicate();
+
+	      VerifyingStream stream = (VerifyingStream) key.getStream();
+	      
+	      stream.initVerify();
+	      stream.updateVerify(dataCopy);
+	      boolean result = stream.verify(signatureCopy);
+	      if (result) {
+	        return true;
+	      }
+      } catch (Exception e){
+    	  LOG.debug(e.getMessage(), e);
       }
     }
     
