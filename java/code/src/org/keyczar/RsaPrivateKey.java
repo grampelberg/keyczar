@@ -103,7 +103,9 @@ public class RsaPrivateKey extends KeyczarKey implements KeyczarPrivateKey {
 
   @Override
   protected Stream getStream() throws KeyczarException {
-    return new RsaPrivateStream();
+	  if(cachedStream == null)
+		  cachedStream = new RsaPrivateStream();
+	  return cachedStream;
   }
 
   @Override
@@ -114,6 +116,11 @@ public class RsaPrivateKey extends KeyczarKey implements KeyczarPrivateKey {
   @Override
   protected byte[] hash() {
     return publicKey.hash();
+  }
+  
+  @Override
+  protected Iterable<byte[]> fallbackHash() {
+	return publicKey.fallbackHash();
   }
 
   @Override

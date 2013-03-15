@@ -25,6 +25,8 @@ import org.keyczar.interfaces.EncryptedReader;
 import org.keyczar.interfaces.KeyczarReader;
 import org.keyczar.util.Util;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 
 /**
@@ -33,6 +35,7 @@ import java.util.HashMap;
  * @author steveweis@gmail.com (Steve Weis)
  * @author arkajit.dey@gmail.com (Arkajit Dey)
  *
+ *  2/2013 - Added Support for key collisions and fall back hashes jay+code@tuley.name (Jay Tuley)
  */
 public abstract class Keyczar {
   private static final Logger LOG = Logger.getLogger(Keyczar.class);
@@ -46,8 +49,8 @@ public abstract class Keyczar {
   KeyVersion primaryVersion;
   final HashMap<KeyVersion, KeyczarKey> versionMap =
     new HashMap<KeyVersion, KeyczarKey>();
-  final HashMap<KeyHash, KeyczarKey> hashMap =
-    new HashMap<KeyHash, KeyczarKey>(); // keep track of used hash identifiers
+  final HashMap<KeyHash, ArrayList<KeyczarKey>> hashMap =
+    new HashMap<KeyHash, ArrayList<KeyczarKey>>(); // keep track of used hash identifiers
 
   private class KeyHash {
     private byte[] data;
@@ -99,9 +102,26 @@ public abstract class Keyczar {
       String keyString = reader.getKey(version.getVersionNumber());
       KeyczarKey key = kmd.getType().getBuilder().read(keyString);
       LOG.debug(Messages.getString("Keyczar.ReadVersion", version));
-      hashMap.put(new KeyHash(key.hash()), key);
+    
+    
+      //Add hash  
+      addKeyHashMap(key.hash(), key);
+      
+      //Add fall back hash(es)
+      for(byte[] h : key.fallbackHash()){
+    	  addKeyHashMap(h, key);
+      }
+      
       versionMap.put(version, key);
     }
+  }
+  
+  private void addKeyHashMap(byte[] hash, KeyczarKey key){
+     KeyHash kHash =new KeyHash(hash);
+     if(hashMap.get(kHash) ==null){
+    	hashMap.put(kHash, new ArrayList<KeyczarKey>());
+     }
+     hashMap.get(kHash).add(key);
   }
 
   /**
@@ -128,7 +148,7 @@ public abstract class Keyczar {
    * @param key KeyczarKey
    */
   void addKey(KeyVersion version, KeyczarKey key) {
-    hashMap.put(new KeyHash(key.hash()), key);
+    addKeyHashMap(key.hash(), key);
     versionMap.put(version, key);
     kmd.addVersion(version);
   }
@@ -140,7 +160,7 @@ public abstract class Keyczar {
     return versionMap.get(primaryVersion);
   }
 
-  KeyczarKey getKey(byte[] hash) {
+  Collection<KeyczarKey> getKey(byte[] hash) {
     return hashMap.get(new KeyHash(hash));
   }
 

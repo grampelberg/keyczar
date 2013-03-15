@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.Key;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import javax.crypto.Cipher;
@@ -57,7 +58,9 @@ public abstract class KeyczarKey {
   private static final int PBE_SALT_SIZE = 8;
   private static final int IV_SIZE = 16;
   private static final int PBE_ITERATION_COUNT = 1000;
-
+  
+  protected ArrayList<byte[]> fallbackHash = new ArrayList<byte[]>();
+  
   // Note that SHA1 and 3DES appears to be the best PBE configuration supported by Sun's JCE.
   private static final String PBE_CIPHER = "PBEWithSHA1AndDESede";
 
@@ -84,7 +87,9 @@ public abstract class KeyczarKey {
   public int hashCode() {
     return Util.toInt(this.hash());
   }
-
+  
+  protected Stream cachedStream =null;
+  
   protected abstract Stream getStream() throws KeyczarException;
 
   /**
@@ -100,6 +105,11 @@ public abstract class KeyczarKey {
    * @return A byte array hash of this key material
    */
   protected abstract byte[] hash();
+  
+  
+  protected Iterable<byte[]> fallbackHash() {
+	return fallbackHash;
+  }
 
   int size() {
     return size;

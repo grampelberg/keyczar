@@ -26,15 +26,22 @@ import org.keyczar.i18n.Messages;
 import org.keyczar.interfaces.KeyType;
 import org.keyczar.interfaces.KeyczarReader;
 import org.keyczar.keyparams.KeyParameters;
+import org.keyczar.util.Base64Coder;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.cert.CertificateException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 
 /**
@@ -47,6 +54,9 @@ import java.util.HashMap;
  *   <li>promote: promote status of a key version in existing store
  *   <li>demote: demote status of a key version in existing store
  *   <li>revoke: revoke key version in existing store (if scheduled to be)
+ *   <li>use: encrypt a message with the specified key
+ *   <li>import: load a key into a key set
+ *   <li>export: extract a specified key version from a key set
  * </ul>
  *
  * @author steveweis@gmail.com (Steve Weis)
@@ -83,11 +93,11 @@ public class KeyczarTool {
    * @param args from the command line
    */
   public static void main(String[] args) {
+    ArrayList<String> nonFlagArgs = new ArrayList<String>();
     if (args.length == 0) {
       printUsage();
     } else {
       try {
-        Command c = Command.getCommand(args[0]);
         HashMap<Flag, String> flagMap = new HashMap<Flag, String>();
         for (String arg : args) {
           if (arg.startsWith("--")) {
@@ -97,6 +107,8 @@ public class KeyczarTool {
               Flag f = Flag.getFlag(nameValuePair[0]);
               flagMap.put(f, nameValuePair[1]);
             }
+          } else {
+            nonFlagArgs.add(arg);
           }
         }
 
@@ -104,18 +116,25 @@ public class KeyczarTool {
         if (locationFlag != null && !locationFlag.endsWith(File.separator)) {
           locationFlag += File.separator;
         }
+        String locationFlag2 = flagMap.get(Flag.LOCATION2);
+        if (locationFlag2 != null && !locationFlag2.endsWith(File.separator)) {
+          locationFlag2 += File.separator;
+        }
         final KeyPurpose purposeFlag = KeyPurpose.getPurpose(flagMap.get(Flag.PURPOSE));
         final KeyStatus statusFlag = KeyStatus.getStatus(flagMap.get(Flag.STATUS));
+        final String formatFlag = flagMap.get(Flag.FORMAT);
         final String asymmetricFlag = flagMap.get(Flag.ASYMMETRIC);
         final String crypterFlag = flagMap.get(Flag.CRYPTER);
+        final String crypterFlag2 = flagMap.get(Flag.CRYPTER2);
         final String destinationFlag = flagMap.get(Flag.DESTINATION);
+        final String destinationFlag2 = flagMap.get(Flag.DESTINATION2);
         final String nameFlag = flagMap.get(Flag.NAME);
         final String paddingFlag = flagMap.get(Flag.PADDING);
         final String passphraseFlag = flagMap.get(Flag.PASSPHRASE);
         final String pemFileFlag = flagMap.get(Flag.PEMFILE);
         final String versionFlag = flagMap.get(Flag.VERSION);
 
-        switch (c) {
+        switch (Command.getCommand(nonFlagArgs.get(0))) {
           case CREATE:
             create(locationFlag, nameFlag, purposeFlag, asymmetricFlag);
             break;
@@ -135,11 +154,16 @@ public class KeyczarTool {
             revoke(locationFlag, Integer.parseInt(versionFlag));
             break;
           case USEKEY:
-            if (args.length > 2) {
-              useKey(args[1], locationFlag, destinationFlag, crypterFlag);
-            } else {
-              printUsage();
+            String message = null;
+            String extra = null;
+            if (nonFlagArgs.size() > 1) {
+              message = nonFlagArgs.get(1);
             }
+            if (nonFlagArgs.size() > 2) {
+                extra = nonFlagArgs.get(2);
+            }
+            useKey(message, extra, formatFlag, locationFlag, locationFlag2, 
+            		destinationFlag,destinationFlag2, crypterFlag, crypterFlag2);
             break;
           case IMPORT_KEY:
             importKey(locationFlag, pemFileFlag, statusFlag, crypterFlag, paddingFlag,
@@ -226,36 +250,99 @@ public class KeyczarTool {
     }
   }
 
-  private static void useKey(String msg, String locationFlag,
-      String destinationFlag, String crypterFlag) throws KeyczarException {
+  private static void useKey(String msg, String extra, String formatFlag, String locationFlag,String locationFlag2,
+                             String destinationFlag,String destinationFlag2, String crypterFlag, String crypterFlag2)
+      throws KeyczarException, IOException, ParseException {
+    if (msg == null) {
+      BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+      StringBuilder msgBuilder = new StringBuilder();
+      String line;
+      while((line = in.readLine()) != null) {
+        msgBuilder.append(line);
+        msgBuilder.append("\n");
+      }
+
+      msg = msgBuilder.toString();
+    }
     GenericKeyczar genericKeyczar =
       createGenericKeyczar(locationFlag, crypterFlag);
-    if (destinationFlag == null) {
-      throw new KeyczarException(
-          Messages.getString("KeyczarTool.MustDefinePublic"));
-    }
     String answer = "";
+    String answer2 = null;
     KeyczarReader reader = new KeyczarFileReader(locationFlag);
     if (crypterFlag != null) {
       Crypter keyCrypter = new Crypter(crypterFlag);
       reader = new KeyczarEncryptedReader(reader, keyCrypter);
     }
-
-    switch (genericKeyczar.getMetadata().getPurpose()) {
-      case DECRYPT_AND_ENCRYPT:
-        Crypter crypter = new Crypter(reader);
-        answer = crypter.encrypt(msg);
-        break;
-      case SIGN_AND_VERIFY:
-        Signer signer = new Signer(reader);
-        answer = signer.sign(msg);
-        break;
-      default:
+    
+    if (formatFlag == null) {
+	    switch (genericKeyczar.getMetadata().getPurpose()) {
+	      case DECRYPT_AND_ENCRYPT:
+	        Crypter crypter = new Crypter(reader);
+	        answer = crypter.encrypt(msg);
+	        break;
+	      case SIGN_AND_VERIFY:
+	        Signer signer = new Signer(reader);
+	        answer = signer.sign(msg);
+	        break;
+	      default:
+	        throw new KeyczarException(
+	            Messages.getString("KeyczarTool.UnsupportedPurpose",
+	                genericKeyczar.getMetadata().getPurpose()));
+	    }
+    } else if (formatFlag.equalsIgnoreCase("crypt")){
+	  Crypter crypter = new Crypter(reader);
+      answer = crypter.encrypt(msg);
+    }else if(formatFlag.equalsIgnoreCase("sign")){
+	  Signer signer = new Signer(reader);
+      answer = signer.sign(msg);
+    }else if(formatFlag.equalsIgnoreCase("sign-timeout")){
+	  TimeoutSigner signer = new TimeoutSigner(reader);
+	  DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+	  extra = extra.replace("Z", "+0000");
+	  Date expiredate =format.parse(extra);
+	  
+      answer = signer.timeoutSign(msg, expiredate.getTime());
+    } else if (formatFlag.equalsIgnoreCase("sign-unversioned")){
+	  UnversionedSigner signer = new UnversionedSigner(reader);
+	  answer = signer.sign(msg);
+    } else if (formatFlag.equalsIgnoreCase("sign-attached")){
+	  Signer signer = new Signer(reader);
+	  if (extra == null) {
+		  extra = "";
+	  }
+      answer = Base64Coder.encodeWebSafe( 
+    		  signer.attachedSign(msg.getBytes(Keyczar.DEFAULT_ENCODING),
+    				  extra.getBytes(Keyczar.DEFAULT_ENCODING)));
+    } else if (formatFlag.equalsIgnoreCase("crypt-session")){
+	  SessionCrypter crypter = new SessionCrypter(new Encrypter(reader));
+	  answer = Base64Coder.encodeWebSafe(crypter.getSessionMaterial());
+      answer2 = Base64Coder.encodeWebSafe(crypter.encrypt(msg.getBytes(Keyczar.DEFAULT_ENCODING)));
+    } else if (formatFlag.equalsIgnoreCase("crypt-signedsession")){
+	  KeyczarReader reader2 = new KeyczarFileReader(locationFlag2);
+	  if (crypterFlag2 != null) {
+	      Crypter keyCrypter = new Crypter(crypterFlag2);
+	      reader2 = new KeyczarEncryptedReader(reader2, keyCrypter);
+	  }
+	  SignedSessionEncrypter crypter = new SignedSessionEncrypter(new Encrypter(reader), new Signer(reader2));
+	  answer = crypter.newSession();
+	  answer2 = Base64Coder.encodeWebSafe(crypter.encrypt(msg.getBytes(Keyczar.DEFAULT_ENCODING)));
+    } else {
         throw new KeyczarException(
-            Messages.getString("KeyczarTool.UnsupportedPurpose",
-                genericKeyczar.getMetadata().getPurpose()));
+	            Messages.getString("KeyczarTool.UnsupportedFormat",
+	            		formatFlag));
     }
-    genericKeyczar.writeFile(answer, destinationFlag);
+    
+    if (destinationFlag == null) {
+	  System.out.println(answer);
+	  if(answer2 !=null){
+		  System.out.println(answer2);
+	  }
+    } else {
+    	genericKeyczar.writeFile(answer, destinationFlag);
+    	if(answer2 !=null){
+    		genericKeyczar.writeFile(answer2, destinationFlag2);
+    	}
+    }
   }
 
   /**
@@ -302,6 +389,10 @@ public class KeyczarTool {
       throw new KeyczarException(
           Messages.getString("KeyczarTool.MustDefinePurpose"));
     }
+    if(mock == null && locationFlag != null){
+    	new File(locationFlag).mkdirs();
+    }
+    
     switch (purposeFlag) {
       case TEST:
         kmd = new KeyMetadata(nameFlag, KeyPurpose.TEST, DefaultKeyType.TEST);
@@ -413,6 +504,9 @@ public class KeyczarTool {
     if (mock == null && destinationFlag == null) { // only if not testing
       throw new KeyczarException(
           Messages.getString("KeyczarTool.MustDefineDestination"));
+    }
+    if(mock == null && destinationFlag != null){
+    	new File(destinationFlag).mkdirs();
     }
     GenericKeyczar genericKeyczar = createGenericKeyczar(locationFlag);
     genericKeyczar.publicKeyExport(destinationFlag);

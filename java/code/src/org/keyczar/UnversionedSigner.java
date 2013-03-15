@@ -46,8 +46,6 @@ import java.nio.ByteBuffer;
 public class UnversionedSigner extends UnversionedVerifier {
   static final int TIMESTAMP_SIZE = 8;
   private static final Logger LOG = Logger.getLogger(UnversionedSigner.class);
-  private final StreamQueue<SigningStream> SIGN_QUEUE =
-    new StreamQueue<SigningStream>();
 
   /**
    * Initialize a new UnversionedSigner with a KeyczarReader. The corresponding
@@ -122,10 +120,9 @@ public class UnversionedSigner extends UnversionedVerifier {
     if (signingKey == null) {
       throw new NoPrimaryKeyException();
     }
-    SigningStream stream = SIGN_QUEUE.poll();
-    if (stream == null) {
-      stream = (SigningStream) signingKey.getStream();
-    }
+
+    SigningStream stream  = (SigningStream) signingKey.getStream();
+    
 
     int spaceNeeded = digestSize();
     if (output.capacity() < spaceNeeded) {
@@ -140,7 +137,7 @@ public class UnversionedSigner extends UnversionedVerifier {
     // Write the signature to the output
     stream.sign(output);
     output.limit(output.position());
-    SIGN_QUEUE.add(stream);
+
   }
 
   /**

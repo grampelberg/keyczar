@@ -18,6 +18,7 @@ package org.keyczar;
 
 import com.google.gson.annotations.Expose;
 
+
 import org.keyczar.exceptions.KeyczarException;
 import org.keyczar.interfaces.KeyType;
 import org.keyczar.interfaces.Stream;
@@ -102,9 +103,12 @@ public class DsaPublicKey extends KeyczarPublicKey {
     return g.modPow(x, p);
   }
 
+
   @Override
   protected Stream getStream() throws KeyczarException {
-    return new DsaVerifyingStream();
+	  if(cachedStream == null)
+		  cachedStream = new DsaVerifyingStream();
+	  return cachedStream;
   }
 
   @Override
@@ -116,7 +120,12 @@ public class DsaPublicKey extends KeyczarPublicKey {
   public byte[] hash() {
     return hash;
   }
-
+  
+  @Override
+  public Iterable<byte[]> fallbackHash() {
+  	return super.fallbackHash();
+  }
+  
   /**
    * Initialize JCE key from JSON data.  Must be called after an instance is read from JSON.
    * In default scope so {@link DsaPrivateKey} can call it when a private key string (which
@@ -143,7 +152,7 @@ public class DsaPublicKey extends KeyczarPublicKey {
 
   private void initializeHash() throws KeyczarException {
     final DSAParams dsaParams = jcePublicKey.getParams();
-    final byte[] fullHash = Util.prefixHash(
+    byte[] fullHash = Util.prefixHash(
         Util.stripLeadingZeros(dsaParams.getP().toByteArray()),
         Util.stripLeadingZeros(dsaParams.getQ().toByteArray()),
         Util.stripLeadingZeros(dsaParams.getG().toByteArray()),
@@ -205,4 +214,6 @@ public class DsaPublicKey extends KeyczarPublicKey {
       }
     }
   }
+
+
 }
