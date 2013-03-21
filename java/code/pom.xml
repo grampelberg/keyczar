@@ -242,6 +242,7 @@
             <includes><include>**/*</include></includes>
             <repositoryName>keyczar</repositoryName>
             <repositoryOwner>pyronicide</repositoryOwner>
+            <merge>true</merge>
         </configuration>
         <executions>
           <execution>
