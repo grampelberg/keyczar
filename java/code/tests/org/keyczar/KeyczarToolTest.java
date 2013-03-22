@@ -224,7 +224,8 @@ public class KeyczarToolTest extends TestCase {
     KeyczarTool.main(args);
     assertEquals(4, mock.numKeys());
     assertTrue(mock.existsVersion(100));
-    assertTrue("Should contain a private key", mock.getKey(100).contains("primeP"));
+    assertTrue("Should contain a private key", 
+               mock.getKey(100).contains("primeP"));
   }
 
   @Test
