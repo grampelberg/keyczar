@@ -9,6 +9,10 @@ import org.keyczar.interfaces.KeyczarReader;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Enables use of a single imported key.
+ *
+ */
 @Experimental
 public class ImportedKeyReader implements KeyczarReader {
   private final KeyMetadata metadata;
@@ -39,9 +43,9 @@ public class ImportedKeyReader implements KeyczarReader {
 
   @Override
   public String getKey() throws KeyczarException {
-	KeyMetadata metadata = KeyMetadata.read(getMetadata());
-		
-	return getKey(metadata.getPrimaryVersion().getVersionNumber());
+    KeyMetadata metadata = KeyMetadata.read(getMetadata());
+
+    return getKey(metadata.getPrimaryVersion().getVersionNumber());
   }
 
   @Override

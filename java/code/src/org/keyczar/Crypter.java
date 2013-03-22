@@ -116,86 +116,88 @@ public class Crypter extends Encrypter {
 
     // The input to decrypt is now positioned at the start of the ciphertext
     inputCopy.mark();
-    int inputLimit =inputCopy.limit();
+    int inputLimit = inputCopy.limit();
     KeyczarException error = null;
 
-    boolean collision =keys.size() > 1;
+    boolean collision = keys.size() > 1;
     
-	for(KeyczarKey key: keys){
-		error = null;
-		
-	    ByteBuffer tempBuffer = output;
-	    if(collision){
-	    	tempBuffer = ByteBuffer.allocate(output.capacity());
-	    }
-	
-	    DecryptingStream cryptStream = (DecryptingStream) key.getStream();
-	    
-	    try{
-		    VerifyingStream verifyStream = cryptStream.getVerifyingStream();
-		    if (inputCopy.remaining() < verifyStream.digestSize()) {
-		    	throw new ShortCiphertextException(inputCopy.remaining());
-		    }
-	  
-		    // Slice off the signature into another buffer
-		    inputCopy.position(inputCopy.limit() - verifyStream.digestSize());
-		    ByteBuffer signature = inputCopy.slice();
-		
-		    // Reset the position of the input to start of the ciphertext
-		    inputCopy.reset();
-		    inputCopy.limit(inputLimit - verifyStream.digestSize());
-		
-		    // Initialize the crypt stream. This may read an IV if any.
-		    cryptStream.initDecrypt(inputCopy);
-		
-		    // Verify the header and IV if any
-		    ByteBuffer headerAndIvToVerify = input.asReadOnlyBuffer();
-		    headerAndIvToVerify.limit(inputCopy.position());
-		    verifyStream.initVerify();
-		    verifyStream.updateVerify(headerAndIvToVerify);
-		
-		    tempBuffer.mark();
-		    // This will process large input in chunks, rather than all at once. This
-		    // avoids making two passes through memory.
-		    while (inputCopy.remaining() > DECRYPT_CHUNK_SIZE) {
-		      ByteBuffer ciphertextChunk = inputCopy.slice();
-		      ciphertextChunk.limit(DECRYPT_CHUNK_SIZE);
-		      cryptStream.updateDecrypt(ciphertextChunk, tempBuffer);
-		      ciphertextChunk.rewind();
-		      verifyStream.updateVerify(ciphertextChunk);
-		      inputCopy.position(inputCopy.position() + DECRYPT_CHUNK_SIZE);
-		    }
-		    int lastBlock =inputCopy.position();
-		    verifyStream.updateVerify(inputCopy);
-		    if (!verifyStream.verify(signature)) {
-		      throw new InvalidSignatureException();
-		    }
-		    inputCopy.position(lastBlock);
-		    cryptStream.doFinalDecrypt(inputCopy, tempBuffer);
-		    tempBuffer.limit(tempBuffer.position());
-		    
-		    if(collision){
-			    //Success copy to final output buffer
-	            tempBuffer.rewind();
-	            output.put(tempBuffer);
-	            output.limit(output.position());
-		    }
-		    return;
-	    }catch (Exception e){
-	    	if(e instanceof KeyczarException){
-	    		error = (KeyczarException)e;	
-	    	}else{	
-	    		LOG.debug(e.getMessage(), e);
-	    		error = new InvalidSignatureException();
-	    	}
-	    
-	    } finally{
-	    	inputCopy.reset();
-	    	inputCopy.limit(inputLimit);
-	    }
+  for (KeyczarKey key : keys) {
+    error = null;
+
+      ByteBuffer tempBuffer = output;
+      if (collision) {
+        tempBuffer = ByteBuffer.allocate(output.capacity());
+      }
+
+      DecryptingStream cryptStream = (DecryptingStream) key.getStream();
+      
+      try {
+
+        VerifyingStream verifyStream = cryptStream.getVerifyingStream();
+        if (inputCopy.remaining() < verifyStream.digestSize()) {
+          throw new ShortCiphertextException(inputCopy.remaining());
+        }
+    
+        // Slice off the signature into another buffer
+        inputCopy.position(inputCopy.limit() - verifyStream.digestSize());
+        ByteBuffer signature = inputCopy.slice();
+
+        // Reset the position of the input to start of the ciphertext
+        inputCopy.reset();
+        inputCopy.limit(inputLimit - verifyStream.digestSize());
+
+        // Initialize the crypt stream. This may read an IV if any.
+        cryptStream.initDecrypt(inputCopy);
+
+        // Verify the header and IV if any
+        ByteBuffer headerAndIvToVerify = input.asReadOnlyBuffer();
+        headerAndIvToVerify.limit(inputCopy.position());
+        verifyStream.initVerify();
+        verifyStream.updateVerify(headerAndIvToVerify);
+        tempBuffer.mark();
+
+        // This will process large input in chunks, rather than all at once. This
+        // avoids making two passes through memory.
+        while (inputCopy.remaining() > DECRYPT_CHUNK_SIZE) {
+          ByteBuffer ciphertextChunk = inputCopy.slice();
+          ciphertextChunk.limit(DECRYPT_CHUNK_SIZE);
+          cryptStream.updateDecrypt(ciphertextChunk, tempBuffer);
+          ciphertextChunk.rewind();
+          verifyStream.updateVerify(ciphertextChunk);
+          inputCopy.position(inputCopy.position() + DECRYPT_CHUNK_SIZE);
+        }
+        int lastBlock = inputCopy.position();
+        verifyStream.updateVerify(inputCopy);
+        if (!verifyStream.verify(signature)) {
+          throw new InvalidSignatureException();
+        }
+
+        inputCopy.position(lastBlock);
+        cryptStream.doFinalDecrypt(inputCopy, tempBuffer);
+        tempBuffer.limit(tempBuffer.position());
+
+        if (collision) {
+          //Success copy to final output buffer
+          tempBuffer.rewind();
+          output.put(tempBuffer);
+          output.limit(output.position());
+        }
+        return;
+      } catch (Exception e) {
+        if (e instanceof KeyczarException) {
+          error = (KeyczarException) e;
+        } else {
+          LOG.debug(e.getMessage(), e);
+          error = new InvalidSignatureException();
+        }
+      } finally {
+        inputCopy.reset();
+        inputCopy.limit(inputLimit);
+      }
     }
-	if(error !=null)
-		throw error;
+    if (error != null) {
+      throw error;
+    }
   }
 
   /**

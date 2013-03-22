@@ -16,9 +16,9 @@
 
 package org.keyczar.interfaces;
 
-import java.nio.ByteBuffer;
-
 import org.keyczar.exceptions.KeyczarException;
+
+import java.nio.ByteBuffer;
 
 /**
  * Encrypting streams are able to encrypt and sign data.

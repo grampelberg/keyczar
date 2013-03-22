@@ -106,9 +106,9 @@ public class UnversionedVerifier extends Keyczar {
       try {
         if (verify(data, signature, key)) {
           return true;
-      	}
+        }
       } catch (Exception e){
-    	  LOG.debug(e.getMessage(), e);
+        LOG.debug(e.getMessage(), e);
       }
     }
     return false;

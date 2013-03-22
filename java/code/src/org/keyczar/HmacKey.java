@@ -72,7 +72,7 @@ public class HmacKey extends KeyczarKey {
 
   private void initJceKey(byte[] keyBytes) throws KeyczarException {
     hmacKey = new SecretKeySpec(keyBytes, MAC_ALGORITHM);
-    byte[] fullHash =Util.hash(keyBytes);
+    byte[] fullHash = Util.hash(keyBytes);
     System.arraycopy(fullHash, 0, hash, 0, hash.length);
   }
 
@@ -87,9 +87,10 @@ public class HmacKey extends KeyczarKey {
 
   @Override
   protected Stream getStream() throws KeyczarException {
-	  if(cachedStream == null)
-		  cachedStream = new HmacStream();
-	  return cachedStream;
+    if (cachedStream == null) {
+      cachedStream = new HmacStream();
+    }
+    return cachedStream;
   }
   
   @Override

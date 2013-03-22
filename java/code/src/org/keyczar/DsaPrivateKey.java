@@ -84,8 +84,7 @@ public class DsaPrivateKey extends KeyczarKey implements KeyczarPrivateKey {
   
   @Override
   protected Iterable<byte[]> fallbackHash() {
-	  
-	return getPublic().fallbackHash();
+    return getPublic().fallbackHash();
   }
 
   public String getKeyGenAlgorithm() {
@@ -99,9 +98,10 @@ public class DsaPrivateKey extends KeyczarKey implements KeyczarPrivateKey {
 
   @Override
   protected Stream getStream() throws KeyczarException {
-	  if(cachedStream == null)
-		  cachedStream = new DsaSigningStream();
-	  return cachedStream;
+    if (cachedStream == null) {
+      cachedStream = new DsaSigningStream();
+    }
+    return cachedStream;
   }
 
   @Override

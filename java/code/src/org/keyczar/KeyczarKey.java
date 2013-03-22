@@ -88,7 +88,7 @@ public abstract class KeyczarKey {
     return Util.toInt(this.hash());
   }
   
-  protected Stream cachedStream =null;
+  protected Stream cachedStream = null;
   
   protected abstract Stream getStream() throws KeyczarException;
 
@@ -108,7 +108,7 @@ public abstract class KeyczarKey {
   
   
   protected Iterable<byte[]> fallbackHash() {
-	return fallbackHash;
+    return fallbackHash;
   }
 
   int size() {
@@ -170,9 +170,11 @@ public abstract class KeyczarKey {
 
       Cipher cipher = Cipher.getInstance(PBE_CIPHER);
       cipher.init(
-          Cipher.ENCRYPT_MODE, pkcs8EncryptionKey, new PBEParameterSpec(salt, PBE_ITERATION_COUNT));
+          Cipher.ENCRYPT_MODE, pkcs8EncryptionKey, new PBEParameterSpec(salt,
+                                                                        PBE_ITERATION_COUNT));
       byte[] encryptedKey = cipher.doFinal(key.getEncoded());
-      EncryptedPrivateKeyInfo inf = new EncryptedPrivateKeyInfo(cipher.getParameters(), encryptedKey);
+      EncryptedPrivateKeyInfo inf = new EncryptedPrivateKeyInfo(cipher.getParameters(),
+                                                                encryptedKey);
       return inf.getEncoded();
     } catch (GeneralSecurityException e) {
       throw new KeyczarException(Messages.getString("KeyczarTool.FailedToEncryptPrivateKey"), e);
@@ -203,7 +205,7 @@ public abstract class KeyczarKey {
     return true;
   }
 
-  abstract protected Key getJceKey();
+  protected abstract Key getJceKey();
 
   private String getPemType() {
     if (isSecret()) {

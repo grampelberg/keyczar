@@ -127,7 +127,7 @@ public class Encrypter extends Keyczar {
     LOG.debug(Messages.getString("Encrypter.Encrypting", input.remaining()));
     KeyczarKey encryptingKey = getPrimaryKey();
     if (encryptingKey == null) {
-      throw new NoPrimaryKeyException() ;
+      throw new NoPrimaryKeyException();
     }
 
     EncryptingStream cryptStream = (EncryptingStream) encryptingKey.getStream();

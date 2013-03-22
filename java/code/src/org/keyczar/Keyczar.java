@@ -108,8 +108,8 @@ public abstract class Keyczar {
       addKeyHashMap(key.hash(), key);
       
       //Add fall back hash(es)
-      for(byte[] h : key.fallbackHash()){
-    	  addKeyHashMap(h, key);
+      for (byte[] h : key.fallbackHash()) {
+        addKeyHashMap(h, key);
       }
       
       versionMap.put(version, key);
@@ -117,11 +117,11 @@ public abstract class Keyczar {
   }
   
   private void addKeyHashMap(byte[] hash, KeyczarKey key){
-     KeyHash kHash =new KeyHash(hash);
-     if(hashMap.get(kHash) ==null){
-    	hashMap.put(kHash, new ArrayList<KeyczarKey>());
-     }
-     hashMap.get(kHash).add(key);
+     KeyHash kHash = new KeyHash(hash);
+    if (hashMap.get(kHash) == null) {
+      hashMap.put(kHash, new ArrayList<KeyczarKey>());
+    }
+    hashMap.get(kHash).add(key);
   }
 
   /**

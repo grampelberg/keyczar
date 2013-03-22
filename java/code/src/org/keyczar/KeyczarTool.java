@@ -250,14 +250,16 @@ public class KeyczarTool {
     }
   }
 
-  private static void useKey(String msg, String extra, String formatFlag, String locationFlag,String locationFlag2,
-                             String destinationFlag,String destinationFlag2, String crypterFlag, String crypterFlag2)
+  private static void useKey(String msg, String extra, String formatFlag,
+      String locationFlag, String locationFlag2,
+      String destinationFlag, String destinationFlag2, 
+      String crypterFlag, String crypterFlag2)
       throws KeyczarException, IOException, ParseException {
     if (msg == null) {
       BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
       StringBuilder msgBuilder = new StringBuilder();
       String line;
-      while((line = in.readLine()) != null) {
+      while ((line = in.readLine()) != null) {
         msgBuilder.append(line);
         msgBuilder.append("\n");
       }
@@ -292,14 +294,14 @@ public class KeyczarTool {
     } else if (formatFlag.equalsIgnoreCase("crypt")) {
       Crypter crypter = new Crypter(reader);
       answer = crypter.encrypt(msg);
-    }else if(formatFlag.equalsIgnoreCase("sign")) {
+    } else if (formatFlag.equalsIgnoreCase("sign")) {
       Signer signer = new Signer(reader);
       answer = signer.sign(msg);
-    }else if(formatFlag.equalsIgnoreCase("sign-timeout")) {
+    } else if (formatFlag.equalsIgnoreCase("sign-timeout")) {
       TimeoutSigner signer = new TimeoutSigner(reader);
       DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
       extra = extra.replace("Z", "+0000");
-      Date expiredate =format.parse(extra);
+      Date expiredate = format.parse(extra);
       answer = signer.timeoutSign(msg, expiredate.getTime());
     } else if (formatFlag.equalsIgnoreCase("sign-unversioned")) {
       UnversionedSigner signer = new UnversionedSigner(reader);
@@ -309,7 +311,7 @@ public class KeyczarTool {
       if (extra == null) {
         extra = "";
     }
-      answer = Base64Coder.encodeWebSafe( 
+      answer = Base64Coder.encodeWebSafe(
         signer.attachedSign(msg.getBytes(Keyczar.DEFAULT_ENCODING),
         extra.getBytes(Keyczar.DEFAULT_ENCODING)));
     } else if (formatFlag.equalsIgnoreCase("crypt-session")) {
@@ -322,7 +324,8 @@ public class KeyczarTool {
         Crypter keyCrypter = new Crypter(crypterFlag2);
         reader2 = new KeyczarEncryptedReader(reader2, keyCrypter);
       }
-      SignedSessionEncrypter crypter = new SignedSessionEncrypter(new Encrypter(reader), new Signer(reader2));
+      SignedSessionEncrypter crypter = new SignedSessionEncrypter(
+        new Encrypter(reader), new Signer(reader2));
       answer = crypter.newSession();
       answer2 = Base64Coder.encodeWebSafe(crypter.encrypt(msg.getBytes(Keyczar.DEFAULT_ENCODING)));
     } else {
@@ -333,12 +336,12 @@ public class KeyczarTool {
     
     if (destinationFlag == null) {
       System.out.println(answer);
-      if(answer2 !=null){
+      if (answer2 != null) {
         System.out.println(answer2);
       }
     } else {
       genericKeyczar.writeFile(answer, destinationFlag);
-      if(answer2 !=null){
+      if (answer2 != null) {
         genericKeyczar.writeFile(answer2, destinationFlag2);
       }
     }
@@ -388,8 +391,8 @@ public class KeyczarTool {
       throw new KeyczarException(
           Messages.getString("KeyczarTool.MustDefinePurpose"));
     }
-    if(mock == null && locationFlag != null){
-    	new File(locationFlag).mkdirs();
+    if (mock == null && locationFlag != null) {
+      new File(locationFlag).mkdirs();
     }
     
     switch (purposeFlag) {
@@ -504,7 +507,7 @@ public class KeyczarTool {
       throw new KeyczarException(
           Messages.getString("KeyczarTool.MustDefineDestination"));
     }
-    if(mock == null && destinationFlag != null){
+    if (mock == null && destinationFlag != null) {
       new File(destinationFlag).mkdirs();
     }
     GenericKeyczar genericKeyczar = createGenericKeyczar(locationFlag);

@@ -106,9 +106,10 @@ public class DsaPublicKey extends KeyczarPublicKey {
 
   @Override
   protected Stream getStream() throws KeyczarException {
-	  if(cachedStream == null)
-		  cachedStream = new DsaVerifyingStream();
-	  return cachedStream;
+    if (cachedStream == null) {
+      cachedStream = new DsaVerifyingStream();
+    }
+    return cachedStream;
   }
 
   @Override
@@ -123,7 +124,7 @@ public class DsaPublicKey extends KeyczarPublicKey {
   
   @Override
   public Iterable<byte[]> fallbackHash() {
-  	return super.fallbackHash();
+    return super.fallbackHash();
   }
   
   /**

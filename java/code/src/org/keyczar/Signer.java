@@ -127,8 +127,8 @@ public class Signer extends Verifier {
    */
   void sign(ByteBuffer input, ByteBuffer hidden, long expirationTime,
       ByteBuffer output) throws KeyczarException {
-    if(LOG.isDebugEnabled()) {
-	  LOG.debug(Messages.getString("Signer.Signing", input.remaining()));
+    if (LOG.isDebugEnabled()) {
+    LOG.debug(Messages.getString("Signer.Signing", input.remaining()));
     }
     KeyczarKey signingKey = getPrimaryKey();
     if (signingKey == null) {
@@ -215,7 +215,7 @@ public class Signer extends Verifier {
     // [blob | hidden.length | hidden | format] or [blob | 0 | format]
     byte[] hiddenPlusLength = Util.fromInt(0);
     if (hidden.length > 0) {
-    	hiddenPlusLength = Util.lenPrefix(hidden);
+      hiddenPlusLength = Util.lenPrefix(hidden);
     }
     
     stream.updateSign(ByteBuffer.wrap(blob));

@@ -86,7 +86,7 @@ public enum Flag {
         return LOCATION2;
     } else if (name.equalsIgnoreCase(DESTINATION2.toString())) {
         return DESTINATION2;
-    }else if (name.equalsIgnoreCase(CRYPTER2.toString())) {
+    } else if (name.equalsIgnoreCase(CRYPTER2.toString())) {
         return CRYPTER2;
     }
     throw new IllegalArgumentException(

@@ -127,23 +127,23 @@ public class Verifier extends Keyczar {
     }
     
     data.mark();
-    if(hidden !=null)
-    	hidden.mark();
+    if (hidden != null) {
+      hidden.mark();
+    }
     signature.mark();
-    for(KeyczarKey key : keys){
-    	try{
-    		
-    		if(rawVerify(key,data, hidden, signature)){
-    			return true;
-    		}
-    		
-    	} catch (Exception e){
-    		LOG.debug(e.getMessage(), e);
-    	}
-    	data.reset();
-    	if(hidden !=null)
-    		 hidden.reset();
-    	signature.reset();
+    for (KeyczarKey key : keys) {
+      try {
+        if (rawVerify(key, data, hidden, signature)) {
+           return true;
+        }
+      } catch (Exception e){
+        LOG.debug(e.getMessage(), e);
+      }
+      data.reset();
+      if (hidden != null) {
+        hidden.reset();
+      }
+      signature.reset();
     }
     return false;
   }
@@ -172,22 +172,19 @@ public class Verifier extends Keyczar {
    */
   boolean rawVerify(KeyczarKey key, final ByteBuffer data, final ByteBuffer hidden,
       final ByteBuffer signature) throws KeyczarException{
+    VerifyingStream stream = (VerifyingStream) key.getStream();
+    stream.initVerify();
+    stream.updateVerify(data);
+    if (hidden != null) {
+    stream.updateVerify(hidden);
+    }
 
-	VerifyingStream stream = (VerifyingStream) key.getStream();
-	
-	
-	stream.initVerify();
-	stream.updateVerify(data);
-	if (hidden != null) {
-	  stream.updateVerify(hidden);
-	}
+    // The signed data is terminated with the current Keyczar format 
+    stream.updateVerify(ByteBuffer.wrap(FORMAT_BYTES));
 
-	// The signed data is terminated with the current Keyczar format 
-	stream.updateVerify(ByteBuffer.wrap(FORMAT_BYTES));
+    boolean result = stream.verify(signature);
 
-	boolean result = stream.verify(signature);
-
-	return result;
+    return result;
   }
   
   /**
@@ -208,7 +205,6 @@ public class Verifier extends Keyczar {
     // assume I need to decode here as well.
     byte[] hash = checkFormatAndGetHash(sigBuffer);
 
-    
     // we have stripped the format and hash, now just get the blob and
     // raw signature
     int blobSize = sigBuffer.getInt();
@@ -222,18 +218,21 @@ public class Verifier extends Keyczar {
     // [blob | hidden.length | hidden | format] or [blob | 0 | format]
     byte[] hiddenPlusLength = Util.fromInt(0);
     if (hidden.length > 0) {
-    	hiddenPlusLength = Util.lenPrefix(hidden);
+      hiddenPlusLength = Util.lenPrefix(hidden);
     }    
     
     Iterable<KeyczarKey> keys = getVerifyingKey(hash);
-    for(KeyczarKey key : keys){
-    	try{
-	    	if(rawVerify(key, ByteBuffer.wrap(blob), ByteBuffer.wrap(hiddenPlusLength), ByteBuffer.wrap(signature))){
-	    		return true;
-	    	}
-    	} catch (Exception e){
-    		LOG.debug(e.getMessage(), e);
-    	}
+    for (KeyczarKey key : keys) {
+      try {
+        if (rawVerify(key,
+                     ByteBuffer.wrap(blob),
+                     ByteBuffer.wrap(hiddenPlusLength),
+                     ByteBuffer.wrap(signature))){
+          return true;
+        }
+      } catch (Exception e){
+        LOG.debug(e.getMessage(), e);
+      }
     }
     return false;
   }
@@ -273,11 +272,10 @@ public class Verifier extends Keyczar {
   public byte[] getAttachedDataWithoutVerifying(final byte[] signedBlob)
       throws KeyczarException {
     ByteBuffer sigBuffer = ByteBuffer.wrap(signedBlob);
-	
     byte[] hash = checkFormatAndGetHash(sigBuffer);
     // just get the bits even though we won't use it.
     getVerifyingKey(hash);
-	    
+
     // we have stripped the format and hash, now just get the blob and
     // raw signature
     int blobSize = sigBuffer.getInt();
@@ -301,7 +299,7 @@ public class Verifier extends Keyczar {
   }
   
   private Iterable<KeyczarKey> getVerifyingKey(byte[] hash) throws KeyNotFoundException {
-	  Iterable<KeyczarKey>  key = getKey(hash);
+    Iterable<KeyczarKey>  key = getKey(hash);
 
     if (key == null) {
       throw new KeyNotFoundException(hash);

@@ -16,10 +16,10 @@
 
 package org.keyczar.enums;
 
-import java.security.interfaces.RSAPublicKey;
-
 import org.keyczar.exceptions.KeyczarException;
 import org.keyczar.util.Util;
+
+import java.security.interfaces.RSAPublicKey;
 
 /**
  * Enumeration of available options for padding of plaintexts encrypted with

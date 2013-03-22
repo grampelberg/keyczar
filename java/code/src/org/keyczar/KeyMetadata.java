@@ -20,8 +20,8 @@ import com.google.gson.annotations.Expose;
 
 import org.keyczar.enums.KeyPurpose;
 import org.keyczar.enums.KeyStatus;
-import org.keyczar.interfaces.KeyType;
 import org.keyczar.exceptions.NoPrimaryKeyException;
+import org.keyczar.interfaces.KeyType;
 import org.keyczar.util.Util;
 
 import java.util.ArrayList;
@@ -148,10 +148,9 @@ public class KeyMetadata {
   public KeyVersion getPrimaryVersion() throws NoPrimaryKeyException {
     for (KeyVersion version : versions) {
       if (version.getStatus() == KeyStatus.PRIMARY) {
-	    return version;
-	  }
+       return version;
+      }
     }
-		
     throw new NoPrimaryKeyException();
   }
 

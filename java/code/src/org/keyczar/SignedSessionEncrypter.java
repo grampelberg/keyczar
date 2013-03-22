@@ -123,9 +123,9 @@ public class SignedSessionEncrypter {
    * @throws KeyczarException
    */
   public byte[] encrypt(byte[] plainText) throws KeyczarException {
-	if (null == session.get()) {
+    if (null == session.get()) {
       throw new KeyczarException("Session not initialized.");
-	}
+    }
 
     SessionMaterial material = session.get();
     ImportedKeyReader importedKeyReader = new ImportedKeyReader(material.getKey());

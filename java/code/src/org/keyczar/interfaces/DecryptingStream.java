@@ -16,9 +16,9 @@
 
 package org.keyczar.interfaces;
 
-import java.nio.ByteBuffer;
-
 import org.keyczar.exceptions.KeyczarException;
+
+import java.nio.ByteBuffer;
 
 /**
  * Decrypting streams are able to decrypt and verify data which has been

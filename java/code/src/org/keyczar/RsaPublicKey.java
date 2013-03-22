@@ -78,15 +78,16 @@ public class RsaPublicKey extends KeyczarPublicKey {
   
   @Override
   public Iterable<byte[]> fallbackHash() {
-  	return super.fallbackHash();
+    return super.fallbackHash();
   }
 
 
   @Override
   protected Stream getStream() throws KeyczarException {
-	  if(cachedStream == null)
-		  cachedStream = new RsaStream();
-	  return cachedStream;
+    if (cachedStream == null) {
+      cachedStream = new RsaStream();
+    }
+    return cachedStream;
   }
 
   @Override
@@ -143,7 +144,7 @@ public class RsaPublicKey extends KeyczarPublicKey {
   }
 
   private void initializeHash() throws KeyczarException {
-	byte[] fullHash = getPadding().computeFullHash(jcePublicKey);
+    byte[] fullHash = getPadding().computeFullHash(jcePublicKey);
     System.arraycopy(fullHash, 0, hash, 0, hash.length);
   }
 
