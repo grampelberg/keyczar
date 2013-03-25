@@ -133,7 +133,7 @@ public abstract class Keyczar {
     kmd.addVersion(version);
   }
 
-  KeyczarKey getPrimaryKey() {
+  public KeyczarKey getPrimaryKey() {
     if (primaryVersion == null) {
       return null;
     }
