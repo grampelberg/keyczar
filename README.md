@@ -4,7 +4,7 @@ This is a fork of [keyczar](https://code.google.com/p/keyczar/). I will try and 
 
 ```clojure
 (defproject myproject "0.1.0-SNAPSHOT"
-  :dependencies [[org.keyczar/keyczar "0.71f"]]
+  :dependencies [[org.keyczar/keyczar "0.71f.1"]]
   :repositories [["keyczar" "https://raw.github.com/pyronicide/keyczar/mvn-repo/"]]
 )
 ```
