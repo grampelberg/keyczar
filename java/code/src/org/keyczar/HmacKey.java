@@ -23,6 +23,7 @@ import org.keyczar.interfaces.KeyType;
 import org.keyczar.interfaces.SigningStream;
 import org.keyczar.interfaces.Stream;
 import org.keyczar.interfaces.VerifyingStream;
+import org.keyczar.keyparams.KeyParameters;
 import org.keyczar.util.Base64Coder;
 import org.keyczar.util.Util;
 
@@ -42,6 +43,7 @@ import javax.crypto.spec.SecretKeySpec;
  */
 public class HmacKey extends KeyczarKey {
   private static final String MAC_ALGORITHM = "HMACSHA1";
+  private static final int HMAC_DIGEST_SIZE = 20;
 
   @Expose private final String hmacKeyString;
 
@@ -60,12 +62,8 @@ public class HmacKey extends KeyczarKey {
     hmacKeyString = null;
   }
 
-  static HmacKey generate() throws KeyczarException {
-    return generate(DefaultKeyType.HMAC_SHA1.defaultSize());
-  }
-
-  static HmacKey generate(int keySize) throws KeyczarException {
-    return new HmacKey(Util.rand(keySize / 8));
+  static HmacKey generate(KeyParameters params) throws KeyczarException {
+    return new HmacKey(Util.rand(params.getKeySize() / 8));
   }
 
   void initFromJson() throws KeyczarException {
@@ -74,7 +72,8 @@ public class HmacKey extends KeyczarKey {
 
   private void initJceKey(byte[] keyBytes) throws KeyczarException {
     hmacKey = new SecretKeySpec(keyBytes, MAC_ALGORITHM);
-    System.arraycopy(Util.hash(keyBytes), 0, hash, 0, hash.length);
+    byte[] fullHash = Util.hash(keyBytes);
+    System.arraycopy(fullHash, 0, hash, 0, hash.length);
   }
 
   /*
@@ -85,11 +84,15 @@ public class HmacKey extends KeyczarKey {
     return hmacKey.getEncoded();
   }
 
+
   @Override
   protected Stream getStream() throws KeyczarException {
-    return new HmacStream();
+    if (cachedStream == null) {
+      cachedStream = new HmacStream();
+    }
+    return cachedStream;
   }
-
+  
   @Override
   public KeyType getType() {
     return DefaultKeyType.HMAC_SHA1;
@@ -98,7 +101,7 @@ public class HmacKey extends KeyczarKey {
   @Override
   protected byte[] hash() {
     return hash;
-  }
+  } 
 
   static HmacKey read(String input) throws KeyczarException {
     HmacKey key = Util.gson().fromJson(input, HmacKey.class);
@@ -124,7 +127,7 @@ public class HmacKey extends KeyczarKey {
 
     @Override
     public int digestSize() {
-      return getType().getOutputSize();
+      return HMAC_DIGEST_SIZE;
     }
 
     @Override
@@ -160,7 +163,6 @@ public class HmacKey extends KeyczarKey {
     public boolean verify(ByteBuffer signature) {
       byte[] sigBytes = new byte[signature.remaining()];
       signature.get(sigBytes);
-
       return Util.safeArrayEquals(hmac.doFinal(), sigBytes);
     }
   }

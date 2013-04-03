@@ -16,9 +16,9 @@
 
 package org.keyczar.interfaces;
 
-import java.nio.ByteBuffer;
-
 import org.keyczar.exceptions.KeyczarException;
+
+import java.nio.ByteBuffer;
 
 /**
  * Signing streams are able to sign data

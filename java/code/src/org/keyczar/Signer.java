@@ -43,8 +43,6 @@ import java.nio.ByteBuffer;
 public class Signer extends Verifier {
   static final int TIMESTAMP_SIZE = 8;
   private static final Logger LOG = Logger.getLogger(Signer.class);
-  private final StreamQueue<SigningStream> SIGN_QUEUE =
-    new StreamQueue<SigningStream>();
 
   /**
    * Initialize a new Signer with a KeyczarReader. The corresponding key set
@@ -129,17 +127,15 @@ public class Signer extends Verifier {
    */
   void sign(ByteBuffer input, ByteBuffer hidden, long expirationTime,
       ByteBuffer output) throws KeyczarException {
-    if(LOG.isDebugEnabled()) {
-	  LOG.debug(Messages.getString("Signer.Signing", input.remaining()));
+    if (LOG.isDebugEnabled()) {
+    LOG.debug(Messages.getString("Signer.Signing", input.remaining()));
     }
     KeyczarKey signingKey = getPrimaryKey();
     if (signingKey == null) {
       throw new NoPrimaryKeyException();
     }
-    SigningStream stream = SIGN_QUEUE.poll();
-    if (stream == null) {
-      stream = (SigningStream) signingKey.getStream();
-    }
+    
+    SigningStream stream = (SigningStream) signingKey.getStream();
 
     int spaceNeeded = digestSize();
     if (expirationTime > 0) {
@@ -179,7 +175,6 @@ public class Signer extends Verifier {
     // Write the signature to the output
     stream.sign(output);
     output.limit(output.position());
-    SIGN_QUEUE.add(stream);
   }
 
   /**
@@ -211,21 +206,16 @@ public class Signer extends Verifier {
     KeyczarKey signingKey = getPrimaryKey();
     if (signingKey == null) {
       throw new NoPrimaryKeyException();
-    }
+    }    
 
-    SigningStream stream = SIGN_QUEUE.poll();
-    
-    if (stream == null) {
-      // If not, allocate a new stream object.
-      stream = (SigningStream) signingKey.getStream();
-    }
+    SigningStream stream = (SigningStream) signingKey.getStream();
     
     stream.initSign();
     // Attached signature signs:
     // [blob | hidden.length | hidden | format] or [blob | 0 | format]
     byte[] hiddenPlusLength = Util.fromInt(0);
     if (hidden.length > 0) {
-    	hiddenPlusLength = Util.lenPrefix(hidden);
+      hiddenPlusLength = Util.lenPrefix(hidden);
     }
     
     stream.updateSign(ByteBuffer.wrap(blob));
@@ -233,7 +223,7 @@ public class Signer extends Verifier {
     stream.updateSign(ByteBuffer.wrap(FORMAT_BYTES));
     
     // now get signature output
-    ByteBuffer output = ByteBuffer.allocate(digestSize());
+    ByteBuffer output = ByteBuffer.allocate(stream.digestSize());
     output.mark();
     
     stream.sign(output);
@@ -243,9 +233,7 @@ public class Signer extends Verifier {
     // [Format number | 4 bytes of key hash | blob size | blob | raw signature]    
     byte[] signature = Util.cat(FORMAT_BYTES, signingKey.hash(),
         Util.lenPrefix(blob), output.array());
-    
-    SIGN_QUEUE.add(stream);
-    
+        
     return signature;
   }
 

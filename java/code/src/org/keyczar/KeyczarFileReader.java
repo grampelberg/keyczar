@@ -49,7 +49,6 @@ public class KeyczarFileReader implements KeyczarReader {
   @Override
   public String getKey() throws KeyczarException {
     KeyMetadata metadata = KeyMetadata.read(getMetadata());
-	
     return getKey(metadata.getPrimaryVersion().getVersionNumber());
   }
 

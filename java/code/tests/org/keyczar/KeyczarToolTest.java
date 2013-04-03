@@ -16,15 +16,18 @@
 
 package org.keyczar;
 
+import java.io.RandomAccessFile;
+
 import junit.framework.TestCase;
 
 import org.junit.Test;
 import org.keyczar.enums.KeyPurpose;
 import org.keyczar.enums.KeyStatus;
+import org.keyczar.enums.RsaPadding;
 import org.keyczar.exceptions.KeyczarException;
 import org.keyczar.exceptions.NoPrimaryKeyException;
-import org.keyczar.interfaces.KeyType;
 import org.keyczar.i18n.Messages;
+import org.keyczar.keyparams.RsaKeyParameters;
 
 /**
  *
@@ -35,6 +38,18 @@ import org.keyczar.i18n.Messages;
  *
  */
 public class KeyczarToolTest extends TestCase {
+  private final static class FastRsaKeyParameters implements RsaKeyParameters {
+    @Override
+    public int getKeySize() {
+      return 512; // use 512-bit keys for speed
+    }
+
+    @Override
+    public RsaPadding getRsaPadding() {
+      return RsaPadding.OAEP;
+    }
+  }
+
   private static final String TEST_DATA = "./testdata/certificates/";
 
   MockKeyczarReader mock;
@@ -79,12 +94,12 @@ public class KeyczarToolTest extends TestCase {
   public final void testAddKeySizeFlag() {
     String[] args = {"addkey", "--status=active", "--size=192"};
     KeyczarTool.main(args);
-    assertEquals(192, mock.getKeySize(4)); // adding fourth key
+    assertEquals(192, mock.getKeySize(100)); // adding fourth key
   }
 
   @Test
   public final void testPublicKeys() throws KeyczarException {
-    pubMock.addKey(33, KeyStatus.PRIMARY, 512); // use 512-bit keys for speed
+    pubMock.addKey(33, KeyStatus.PRIMARY, new FastRsaKeyParameters());
     KeyczarTool.setReader(pubMock); // use pubMock reader instead
     assertFalse(pubMock.exportedPublicKeySet());
     String[] args = {"pubkey"};
@@ -114,6 +129,40 @@ public class KeyczarToolTest extends TestCase {
     assertTrue(mock.existsVersion(99));
     KeyczarTool.main(args);
     assertFalse(mock.existsVersion(99));
+  }
+
+  @Test
+  public final void testAddAfterRevoke() throws KeyczarException {
+    mock = new MockKeyczarReader("TEST", KeyPurpose.ENCRYPT, DefaultKeyType.AES);
+    assertEquals(0, mock.numKeys());
+    KeyczarTool.setReader(mock);
+
+    // Add a pair of keys
+    String[] addKeyArgs = {"addkey", "--status=primary"};
+    KeyczarTool.main(addKeyArgs);
+    assertTrue(mock.existsVersion(1));
+    assertFalse(mock.existsVersion(2));
+    KeyczarTool.main(addKeyArgs);
+    assertTrue(mock.existsVersion(1));
+    assertTrue(mock.existsVersion(2));
+
+    // Demote and revoke version 1
+    String[] demoteArgs = {"demote", "--version=1"};
+    KeyczarTool.main(demoteArgs);
+    assertTrue(mock.existsVersion(1));
+    assertTrue(mock.existsVersion(2));
+    String[] revokeArgs = {"revoke", "--version=1"};
+    KeyczarTool.main(revokeArgs);
+    assertFalse(mock.existsVersion(1));
+    assertTrue(mock.existsVersion(2));
+    String key2 = mock.getKey(2);
+
+    // Add a third key
+    KeyczarTool.main(addKeyArgs);
+    assertFalse(mock.existsVersion(1));
+    assertTrue(mock.existsVersion(2));
+    assertEquals(key2, mock.getKey(2));
+    assertTrue(mock.existsVersion(3));
   }
 
   @Test
@@ -160,9 +209,9 @@ public class KeyczarToolTest extends TestCase {
     assertEquals(3, mock.numKeys());
     KeyczarTool.main(args);
     assertEquals(4, mock.numKeys());
-    assertTrue(mock.existsVersion(4));
-    assertFalse(mock.getKey(4).contains("\"OAEP\""));
-    assertTrue(mock.getKey(4).contains("\"PKCS\""));
+    assertTrue(mock.existsVersion(100));
+    assertFalse(mock.getKey(100).contains("\"OAEP\""));
+    assertTrue(mock.getKey(100).contains("\"PKCS\""));
   }
 
   @Test
@@ -174,8 +223,9 @@ public class KeyczarToolTest extends TestCase {
     assertEquals(3, mock.numKeys());
     KeyczarTool.main(args);
     assertEquals(4, mock.numKeys());
-    assertTrue(mock.existsVersion(4));
-    assertTrue("Should contain a private key", mock.getKey(4).contains("primeP"));
+    assertTrue(mock.existsVersion(100));
+    assertTrue("Should contain a private key", 
+               mock.getKey(100).contains("primeP"));
   }
 
   @Test
@@ -197,8 +247,8 @@ public class KeyczarToolTest extends TestCase {
     assertEquals(3, mock.numKeys());
     KeyczarTool.main(args);
     assertEquals(4, mock.numKeys());
-    assertTrue(mock.existsVersion(4));
-    assertTrue("Should contain a private key", mock.getKey(4).contains("\"x\":"));
+    assertTrue(mock.existsVersion(100));
+    assertTrue("Should contain a private key", mock.getKey(100).contains("\"x\":"));
   }
 
   @Test
@@ -231,6 +281,54 @@ public class KeyczarToolTest extends TestCase {
     assertEquals(KeyStatus.PRIMARY, mock.getStatus(1));
   }
 
+  @Test
+  public final void testUseKey() {
+    try {
+      KeyczarTool.setReader(null); // use real reader
+      String testKeyPath = "./testdata/aes";
+      // TODO(mtomczak): Choose a safer location for this scratch file.
+      String testOutputPath = "/tmp/keyczar_test_output";
+      String testOutputPath2 = "/tmp/keyczar_test_output_2";
+      String testMsg = "hello, world!";
+      Crypter crypter = new Crypter(testKeyPath);
+
+      {
+        String[] args = {"usekey",
+                         "--location=" + testKeyPath,
+                         "--destination=" + testOutputPath,
+                         testMsg};
+        KeyczarTool.main(args);
+        RandomAccessFile encryptedOutput =
+            new RandomAccessFile(testOutputPath, "r");
+        String encryptedKey = encryptedOutput.readLine();
+        encryptedOutput.close();
+
+        assertEquals(crypter.decrypt(encryptedKey), testMsg);
+      }
+      {
+        // Verify argument order does not matter.
+        String[] args2 = {"usekey",
+                          "--location=" + testKeyPath,
+                          testMsg,
+                          "--destination=" + testOutputPath2};
+
+        KeyczarTool.main(args2);
+        RandomAccessFile encryptedOutput =
+            new RandomAccessFile(testOutputPath2, "r");
+        String encryptedKey = encryptedOutput.readLine();
+        encryptedOutput.close();
+
+        assertEquals(crypter.decrypt(encryptedKey), testMsg);
+      }
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      fail("Unexpected exception: " + e.toString());
+    }
+  }
+
+  // TODO(mtomczak): Add tests for stdin and stdout support. Will need
+  //                 to mock stdin and stdout in keytool.
   // TODO(swillden) Add export tests.
 
   @Override

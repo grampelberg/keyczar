@@ -16,9 +16,10 @@
 
 package org.keyczar.interfaces;
 
+import org.keyczar.exceptions.KeyczarException;
+
 import java.nio.ByteBuffer;
 
-import org.keyczar.exceptions.KeyczarException;
 
 /**
  * Verifying Streams are able to verify data that has been signed by

@@ -18,7 +18,6 @@ package org.keyczar;
 
 import com.google.gson.annotations.Expose;
 
-import org.keyczar.enums.RsaPadding;
 import org.keyczar.exceptions.KeyczarException;
 import org.keyczar.i18n.Messages;
 import org.keyczar.interfaces.KeyType;
@@ -30,6 +29,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.Key;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import javax.crypto.Cipher;
@@ -58,7 +58,9 @@ public abstract class KeyczarKey {
   private static final int PBE_SALT_SIZE = 8;
   private static final int IV_SIZE = 16;
   private static final int PBE_ITERATION_COUNT = 1000;
-
+  
+  protected ArrayList<byte[]> fallbackHash = new ArrayList<byte[]>();
+  
   // Note that SHA1 and 3DES appears to be the best PBE configuration supported by Sun's JCE.
   private static final String PBE_CIPHER = "PBEWithSHA1AndDESede";
 
@@ -85,7 +87,9 @@ public abstract class KeyczarKey {
   public int hashCode() {
     return Util.toInt(this.hash());
   }
-
+  
+  protected Stream cachedStream = null;
+  
   protected abstract Stream getStream() throws KeyczarException;
 
   /**
@@ -101,20 +105,14 @@ public abstract class KeyczarKey {
    * @return A byte array hash of this key material
    */
   protected abstract byte[] hash();
+  
+  
+  protected Iterable<byte[]> fallbackHash() {
+    return fallbackHash;
+  }
 
   int size() {
     return size;
-  }
-
-  /**
-   * Generates private key of desired type and of the default size.
-   *
-   * @param type KeyType desired
-   * @return KeyczarKey of desired type
-   * @throws KeyczarException for unsupported key types
-   */
-  static KeyczarKey genKey(KeyType type) throws KeyczarException {
-    return genKey(type, type.defaultSize());
   }
 
   /**
@@ -135,68 +133,6 @@ public abstract class KeyczarKey {
   @Override
   public String toString() {
     return Util.gson().toJson(this);
-  }
-
-  /**
-   * Generates private key of the desired type and size. Cannot generate public
-   * key, instead must export public key set from private keys.
-   *
-   * If given size is unacceptable, falls back to using default size for the
-   * desired key type.
-   *
-   * @param type KeyType desired
-   * @param keySize desired length of key
-   * @return KeyczarKey of desired type
-   * @throws KeyczarException for unsupported key types
-   */
-  static KeyczarKey genKey(KeyType type, int keySize) throws KeyczarException {
-    RsaPadding padding = null;
-    if (type == DefaultKeyType.RSA_PRIV) {
-      padding = RsaPadding.OAEP;
-    }
-    return genKey(type, padding, keySize);
-  }
-
-  /**
-   * Generates private key of the desired type and size. Cannot generate public
-   * key, instead must export public key set from private keys.
-   *
-   * If given size is unacceptable, falls back to using default size for the
-   * desired key type.
-   *
-   * @param type KeyType desired
-   * @param padding Encryption padding type for RSA keys.  Should be null for others.
-   * @param keySize desired length of key
-   * @return KeyczarKey of desired type
-   * @throws KeyczarException for unsupported key types
-   */
-  static KeyczarKey genKey(KeyType type, RsaPadding padding, int keySize)
-      throws KeyczarException {
-    if (!type.isAcceptableSize(keySize)) {
-      keySize = type.defaultSize();  // fall back to default
-    }
-
-    if (padding != null && type != DefaultKeyType.RSA_PRIV) {
-      throw new KeyczarException(Messages.getString("InvalidPadding", padding.name()));
-    }
-
-    KeyType.Builder builder = (type == DefaultKeyType.RSA_PRIV) ?
-        DefaultKeyType.RSA_PRIV.getRsaBuilder(padding) : type.getBuilder();
-    return builder.generate(keySize);
-  }
-
-  /**
-   * Converts a JSON string representation of a KeyczarKey into the appropriate
-   * KeyczarKey object.
-   *
-   * @param type KeyType being read from JSON input
-   * @param key JSON String representation of a KeyczarKey
-   * @return KeyczareKey of given type
-   * @throws KeyczarException if type mismatch with JSON input or unsupported
-   * key type
-   */
-  static KeyczarKey readKey(KeyType type, String key) throws KeyczarException {
-    return type.getBuilder().read(key);
   }
 
   /**
@@ -234,9 +170,11 @@ public abstract class KeyczarKey {
 
       Cipher cipher = Cipher.getInstance(PBE_CIPHER);
       cipher.init(
-          Cipher.ENCRYPT_MODE, pkcs8EncryptionKey, new PBEParameterSpec(salt, PBE_ITERATION_COUNT));
+          Cipher.ENCRYPT_MODE, pkcs8EncryptionKey, new PBEParameterSpec(salt,
+                                                                        PBE_ITERATION_COUNT));
       byte[] encryptedKey = cipher.doFinal(key.getEncoded());
-      EncryptedPrivateKeyInfo inf = new EncryptedPrivateKeyInfo(cipher.getParameters(), encryptedKey);
+      EncryptedPrivateKeyInfo inf = new EncryptedPrivateKeyInfo(cipher.getParameters(),
+                                                                encryptedKey);
       return inf.getEncoded();
     } catch (GeneralSecurityException e) {
       throw new KeyczarException(Messages.getString("KeyczarTool.FailedToEncryptPrivateKey"), e);
@@ -267,7 +205,7 @@ public abstract class KeyczarKey {
     return true;
   }
 
-  abstract protected Key getJceKey();
+  protected abstract Key getJceKey();
 
   private String getPemType() {
     if (isSecret()) {
