@@ -1,0 +1,10 @@
+language: java
+java:
+  - openjdk6
+  - openjdk7
+  - oraclejdk7
+install: 
+  - cd java/code
+  - mvn install -DskipTests=true
+script:
+  - mvn test
