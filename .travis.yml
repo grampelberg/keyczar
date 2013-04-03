@@ -5,6 +5,6 @@ java:
   - oraclejdk7
 install: 
   - cd java/code
-  - mvn install -DskipTests=true
+  - mvn install -DskipTests=true -q
 script:
   - mvn test
