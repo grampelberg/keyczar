@@ -65,11 +65,11 @@ public class RsaPrivateKey extends KeyczarKey implements KeyczarPrivateKey {
 
   private RSAPrivateCrtKey jcePrivateKey;
 
-  static RsaPrivateKey generate(RsaPadding padding) throws KeyczarException {
+  public static RsaPrivateKey generate(RsaPadding padding) throws KeyczarException {
     return generate(DefaultKeyType.RSA_PRIV.defaultSize(), padding);
   }
 
-  static RsaPrivateKey generate(int keySize, RsaPadding padding) throws KeyczarException {
+  public static RsaPrivateKey generate(int keySize, RsaPadding padding) throws KeyczarException {
     KeyPair keyPair = Util.generateKeyPair(KEY_GEN_ALGORITHM, keySize);
     return new RsaPrivateKey((RSAPrivateCrtKey) keyPair.getPrivate(), padding);
   }
