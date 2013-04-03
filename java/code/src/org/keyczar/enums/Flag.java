@@ -35,8 +35,12 @@ public enum Flag {
   ASYMMETRIC("asymmetric"),
   CRYPTER("crypter"),
   PEMFILE("pemfile"),
-  PASSPHRASE("passphrase");
-
+  PASSPHRASE("passphrase"),
+  FORMAT("format"),
+  LOCATION2("location2"),
+  DESTINATION2("destination2"),
+  CRYPTER2("crypter2");
+  
   private final String name;
 
   private Flag(String name) {
@@ -76,6 +80,14 @@ public enum Flag {
       return PASSPHRASE;
     } else if (name.equalsIgnoreCase(PADDING.toString())) {
       return PADDING;
+    } else if (name.equalsIgnoreCase(FORMAT.toString())) {
+        return FORMAT;
+    } else if (name.equalsIgnoreCase(LOCATION2.toString())) {
+        return LOCATION2;
+    } else if (name.equalsIgnoreCase(DESTINATION2.toString())) {
+        return DESTINATION2;
+    } else if (name.equalsIgnoreCase(CRYPTER2.toString())) {
+        return CRYPTER2;
     }
     throw new IllegalArgumentException(
         Messages.getString("Flag.UnknownFlag", name));

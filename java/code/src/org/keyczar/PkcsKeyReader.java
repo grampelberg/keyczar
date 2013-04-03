@@ -80,10 +80,10 @@ public class PkcsKeyReader implements KeyczarReader {
       String passphrase) throws KeyczarException {
     if (purpose == null) {
       throw new KeyczarException("Key purpose must not be null");
-	}
-	if (pkcs8Stream == null) {
-	  throw new KeyczarException("PKCS8 stream must not be null");
-	}
+    }
+    if (pkcs8Stream == null) {
+      throw new KeyczarException("PKCS8 stream must not be null");
+    }
     this.purpose = purpose;
     this.pkcs8Stream = pkcs8Stream;
     this.rsaPadding = rsaPadding;

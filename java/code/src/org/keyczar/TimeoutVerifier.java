@@ -87,7 +87,7 @@ public class TimeoutVerifier {
    * @param clock A clock to use for getting the current time
    */
   void setClock(Clock clock) {
-	  this.clock = clock;
+    this.clock = clock;
   }
 
   /**

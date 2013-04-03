@@ -44,8 +44,6 @@ public class Encrypter extends Keyczar {
   private static final Logger LOG =
     Logger.getLogger(Encrypter.class);
   private static final int ENCRYPT_CHUNK_SIZE = 1024;
-  private final StreamQueue<EncryptingStream> ENCRYPT_QUEUE =
-    new StreamQueue<EncryptingStream>();
 
   /**
    * Initialize a new Encrypter with a KeyczarReader. The corresponding key set
@@ -85,19 +83,17 @@ public class Encrypter extends Keyczar {
    * @throws KeyczarException If the key set contains no primary encrypting key.
    */
   public int ciphertextSize(int inputLength) throws KeyczarException {
-    EncryptingStream cryptStream = ENCRYPT_QUEUE.poll();
-    if (cryptStream == null) {
+
       KeyczarKey encryptingKey = getPrimaryKey();
       if (encryptingKey == null) {
         throw new NoPrimaryKeyException();
       }
-      cryptStream = (EncryptingStream) encryptingKey.getStream();
-    }
+      EncryptingStream cryptStream = (EncryptingStream) encryptingKey.getStream();
+    
     SigningStream signStream = cryptStream.getSigningStream();
 
     int outputSize = HEADER_SIZE + cryptStream.maxOutputSize(inputLength) +
         signStream.digestSize();
-    ENCRYPT_QUEUE.add(cryptStream);
     return outputSize;
   }
 
@@ -131,12 +127,11 @@ public class Encrypter extends Keyczar {
     LOG.debug(Messages.getString("Encrypter.Encrypting", input.remaining()));
     KeyczarKey encryptingKey = getPrimaryKey();
     if (encryptingKey == null) {
-      throw new NoPrimaryKeyException() ;
+      throw new NoPrimaryKeyException();
     }
-    EncryptingStream cryptStream = ENCRYPT_QUEUE.poll();
-    if (cryptStream == null) {
-      cryptStream = (EncryptingStream) encryptingKey.getStream();
-    }
+
+    EncryptingStream cryptStream = (EncryptingStream) encryptingKey.getStream();
+    
     // Initialize the signing stream
     SigningStream signStream = cryptStream.getSigningStream();
     signStream.initSign();
@@ -170,7 +165,6 @@ public class Encrypter extends Keyczar {
     signStream.updateSign(outputToSign);
     // Sign the final block of ciphertext output
     signStream.sign(output);
-    ENCRYPT_QUEUE.add(cryptStream);
   }
 
   /**

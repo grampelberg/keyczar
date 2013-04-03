@@ -40,6 +40,7 @@ import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAPublicKeySpec;
 
+
 import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
 
@@ -73,17 +74,27 @@ public class RsaPublicKey extends KeyczarPublicKey {
   @Override
   public byte[] hash() {
     return hash;
+  } 
+  
+  @Override
+  public Iterable<byte[]> fallbackHash() {
+    return super.fallbackHash();
   }
+
 
   @Override
   protected Stream getStream() throws KeyczarException {
-    return new RsaStream();
+    if (cachedStream == null) {
+      cachedStream = new RsaStream();
+    }
+    return cachedStream;
   }
 
   @Override
   public KeyType getType() {
     return DefaultKeyType.RSA_PUB;
   }
+  
 
   RsaPublicKey(RSAPrivateCrtKey privateKey, RsaPadding padding) throws KeyczarException {
     this(privateKey.getModulus(), privateKey.getPublicExponent(), padding);
@@ -133,7 +144,12 @@ public class RsaPublicKey extends KeyczarPublicKey {
   }
 
   private void initializeHash() throws KeyczarException {
-    System.arraycopy(getPadding().computeFullHash(jcePublicKey), 0, hash, 0, hash.length);
+    byte[] fullHash = getPadding().computeFullHash(jcePublicKey);
+    System.arraycopy(fullHash, 0, hash, 0, hash.length);
+  }
+
+  int keySizeInBytes() {
+    return jcePublicKey.getModulus().bitLength() / 8;
   }
 
   @Override
@@ -172,7 +188,7 @@ public class RsaPublicKey extends KeyczarPublicKey {
 
     @Override
     public int digestSize() {
-      return getType().getOutputSize();
+      return keySizeInBytes();
     }
 
     @Override
@@ -252,7 +268,7 @@ public class RsaPublicKey extends KeyczarPublicKey {
 
     @Override
     public int maxOutputSize(int inputLen) {
-      return getType().getOutputSize(size);
+      return keySizeInBytes();
     }
 
     @Override

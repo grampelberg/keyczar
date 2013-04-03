@@ -42,7 +42,7 @@ public class SignedSessionDecrypter {
   
   public SignedSessionDecrypter(Crypter crypter, Verifier verifier,
       String session) throws Base64DecodingException, KeyczarException {
-    this.verifier= verifier;
+    this.verifier = verifier;
     
     // decode & decrypt session
     byte[] decoded = Base64Coder.decodeWebSafe(session);

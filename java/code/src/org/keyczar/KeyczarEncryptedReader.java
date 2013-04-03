@@ -44,8 +44,8 @@ public class KeyczarEncryptedReader implements EncryptedReader {
   
   @Override
   public String getKey() throws KeyczarException {
-	String encrypted = reader.getKey();
-	return crypter.decrypt(encrypted);
+    String encrypted = reader.getKey();
+    return crypter.decrypt(encrypted);
   }
 
   @Override
