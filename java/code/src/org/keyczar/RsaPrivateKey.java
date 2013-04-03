@@ -74,7 +74,7 @@ public class RsaPrivateKey extends KeyczarKey implements KeyczarPrivateKey {
     return new RsaPrivateKey((RSAPrivateCrtKey) keyPair.getPrivate(), padding);
   }
 
-  static RsaPrivateKey read(String input) throws KeyczarException {
+  public static RsaPrivateKey read(String input) throws KeyczarException {
     RsaPrivateKey key = Util.gson().fromJson(input, RsaPrivateKey.class);
     return key.initFromJson();
   }
